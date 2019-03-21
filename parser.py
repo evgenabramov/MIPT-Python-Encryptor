@@ -23,7 +23,7 @@ def build_decode_parser():
     decode_parser.add_argument('--input-file', required=False,
                                help='Name of input file', dest='input_file', default=sys.stdin)
     decode_parser.add_argument('--output-file', required=False,
-                               help='Name of output file', dest='output_file', default=sys.stdin)
+                               help='Name of output file', dest='output_file', default=sys.stdout)
     return decode_parser
 
 
