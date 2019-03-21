@@ -11,5 +11,5 @@ def get_stream(stream, mode):
     else:
         file = open(stream, mode)
     yield file
-    if stream != sys.stdin:
+    if stream != sys.stdin and stream != sys.stdout:
         file.close()
