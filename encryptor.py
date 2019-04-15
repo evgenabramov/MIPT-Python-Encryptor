@@ -3,15 +3,14 @@
 import string
 import json
 import parser
+from collections import Counter
 from text_manager import get_stream
 
 
-def get_next_symbol(symbol, step, is_encoding=True):
-    if not is_encoding:
-        step = -step
+def get_next_symbol(symbol, step):
     if symbol not in string.ascii_letters:
         return symbol
-    if symbol in string.ascii_uppercase:
+    if symbol.isupper():
         lower_bound = ord('A')
         upper_bound = ord('Z')
     else:
@@ -20,15 +19,16 @@ def get_next_symbol(symbol, step, is_encoding=True):
     return chr(lower_bound + (ord(symbol) - lower_bound + step) % (upper_bound - lower_bound + 1))
 
 
-def caesar(data, key, is_encoding):
+def caesar(data, key):
     for index in range(len(data)):
-        data[index] = get_next_symbol(data[index], key, is_encoding)
+        data[index] = get_next_symbol(data[index], key)
     return data
 
 
 def vigenere(data, key, is_encoding):
     for index in range(len(data)):
-        data[index] = get_next_symbol(data[index], ord(key[index % len(key)]), is_encoding)
+        letter_position = ord(key[index % len(key)])
+        data[index] = get_next_symbol(data[index], letter_position if is_encoding else -letter_position)
     return data
 
 
@@ -36,7 +36,7 @@ def process(cipher, key, input_filename, output_filename, is_encoding):
     with get_stream(input_filename, 'r') as input_file:
         data = list(input_file.read())
     if cipher == 'caesar':
-        data = caesar(data, int(key), is_encoding)
+        data = caesar(data, int(key) if is_encoding else -int(key))
     else:
         data = vigenere(data, key, is_encoding)
     data = ''.join(data)
@@ -45,16 +45,11 @@ def process(cipher, key, input_filename, output_filename, is_encoding):
 
 
 def count_frequency(data):
-    frequency = {}
-    for letter in string.ascii_lowercase:
-        frequency[letter] = 0.0
-    num_letters = 0
-    for symbol in data:
-        if symbol in string.ascii_letters:
-            frequency[symbol.lower()] += 1
-            num_letters += 1
-    for letter in string.ascii_lowercase:
-        frequency[letter] = frequency[letter] / num_letters
+    frequency = Counter(symbol.lower() for symbol in data if symbol in string.ascii_letters)
+    num_letters = sum(frequency.values())
+    frequency = dict(frequency)
+    for letter in frequency.keys():
+        frequency[letter] /= num_letters
     return frequency
 
 
@@ -73,21 +68,22 @@ def get_difference(step, model_frequency, frequency):
     return result
 
 
+alphabet_length = len(string.ascii_lowercase)
+
+
 def hack(input_filename, output_filename, model_filename):
     with open(model_filename, 'r') as model_file:
         model_frequency = json.load(model_file)
     with get_stream(input_filename, 'r') as input_file:
         data = list(input_file.read())
     frequency = count_frequency(data)
-    min_step = min([step for step in range(alphabet_length)],
+    min_step = min(range(alphabet_length),
                    key=lambda step: get_difference(step, model_frequency, frequency))
-    data = caesar(data, min_step, is_encoding=True)
+    data = caesar(data, min_step)
     data = ''.join(data)
     with get_stream(output_filename, 'w') as output_file:
         output_file.write(data)
 
-
-alphabet_length = len(string.ascii_lowercase)
 
 args = parser.command_parser.parse_args()
 if args.method == 'encode':
