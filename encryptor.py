@@ -5,6 +5,7 @@ import json
 import parser
 from collections import Counter
 from text_manager import get_stream
+from itertools import cycle
 
 
 def get_next_symbol(symbol, step):
@@ -20,15 +21,15 @@ def get_next_symbol(symbol, step):
 
 
 def caesar(data, key):
-    for index in range(len(data)):
-        data[index] = get_next_symbol(data[index], key)
+    for index, symbol in enumerate(data):
+        data[index] = get_next_symbol(symbol, key)
     return data
 
 
 def vigenere(data, key, is_encoding):
-    for index in range(len(data)):
-        letter_position = ord(key[index % len(key)])
-        data[index] = get_next_symbol(data[index], letter_position if is_encoding else -letter_position)
+    for (index, symbol), key_symbol in zip(enumerate(data), cycle(key)):
+        letter_position = ord(key_symbol)
+        data[index] = get_next_symbol(symbol, letter_position if is_encoding else -letter_position)
     return data
 
 
